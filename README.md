@@ -1,5 +1,7 @@
 # Feature Scaling Induced Data Leakage Quantification in Machine-learning Based Voice Pathology Detection
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15671392.svg)](https://doi.org/10.5281/zenodo.15671392)
+
 This repository contains the code for the paper "Feature Scaling Induced Data Leakage Quantification in Machine-learning Based Voice Pathology Detection" 
 by Jan Vrba, Jakub Steinbach, Tomáš Jirsa and Noriyasu Homma. DOI: XYZ
 
