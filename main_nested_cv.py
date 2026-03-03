@@ -13,12 +13,10 @@ import pandas as pd
 
 from itertools import product
 from datetime import datetime
-
-from sklearn.model_selection import train_test_split, RandomizedSearchCV, StratifiedKFold, KFold
+from sklearn import set_config
+from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold, KFold, cross_val_score
 from sklearn.preprocessing import (MinMaxScaler, StandardScaler,
                                    MaxAbsScaler, RobustScaler, QuantileTransformer)
-from sklearn import set_config
-from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from sklearn.pipeline import Pipeline
 from param_grid import set_param_grid
 
@@ -32,7 +30,7 @@ if __name__ == "__main__":
         skip_parameter_validation=True,
     )
     RANDOM_STATE = 42 # for consistency of stochastic scalers / classifiers
-    EXPERIMENTS = 1000 # number of repetitions for each combination
+    EXPERIMENTS = 100 # number of repetitions for each combination
     LEAKAGE = [True, False] # scaling introducing leakage / correct scaling
     STRATIFY = [True, False] # stratified split which respects the class ratio / random split
 
@@ -47,9 +45,8 @@ if __name__ == "__main__":
     ]
 
     # File name
-    file_name = f"scaling_leakage_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-    results = pd.DataFrame(columns=["dataset", "scaler", "stratify", "classifier", "seed", "acc_correct",
-                                    "uar_correct", "acc_leakage", "uar_leakage"])
+    file_name = f"n_cv_scaling_leakage_results_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    results = pd.DataFrame(columns=["dataset", "scaler", "stratify", "classifier", "seed", "uar_correct", "uar_leakage"])
 
     # Prepare all combinations of scalers and stratification splits as well as a number of experiments to reduce the
     # number of nested loops
@@ -60,9 +57,11 @@ if __name__ == "__main__":
               f"seed {split_seed}...", end="")
         # Set the splitter based on the stratification setting
         if stratify:
-            splitter = StratifiedKFold(n_splits=5, shuffle=True, random_state=split_seed)
+            inner_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=split_seed)
+            outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=split_seed)
         else:
-            splitter = KFold(n_splits=5, shuffle=True, random_state=split_seed)
+            inner_cv = KFold(n_splits=5, shuffle=True, random_state=split_seed)
+            outer_cv = KFold(n_splits=5, shuffle=True, random_state=split_seed)
 
         # Loop through the datasets
         for dataset in DATASETS:
@@ -72,6 +71,7 @@ if __name__ == "__main__":
             dataset_name = dataset["name"]
             y_orig = dataset["data"]["pathology"]
             X_orig = dataset["data"].drop(columns=["pathology", "session_id"])
+
             X_leakage = X_orig.copy()
             X_leakage = scaler.fit_transform(X_leakage)
 
@@ -92,34 +92,25 @@ if __name__ == "__main__":
                     # In case of leakage, first transform the whole dataset, then conduct randomized search with
                     # cross-validation to find the optimal settings
                     if leakage:
-                        X_train, X_test, y_train, y_test = train_test_split(
-                            X_leakage, y_orig, test_size=0.2, random_state=split_seed,
-                            stratify=y_orig if stratify else None)
                         clf_search = RandomizedSearchCV(estimator=Pipeline([("model", clf)]),
-                                                        param_distributions=param_space, cv=splitter,
+                                                        param_distributions=param_space, cv=inner_cv,
                                                         n_iter=n_iter, n_jobs=-1, random_state=split_seed,
                                                         scoring="balanced_accuracy")
-                        clf_search.fit(X_train, y_train)
+                        nested_score = cross_val_score(clf_search, X=X_leakage, y=y_orig, cv=outer_cv, scoring="balanced_accuracy")
 
                     # In case of correct methodology, fit the scaler on the training set which is used for
                     # the hyperparameter optimization and then transform the test set.
                     else:
-                        X_train, X_test, y_train, y_test = train_test_split(
-                            X_orig, y_orig, test_size=0.2, random_state=split_seed,
-                            stratify=y_orig if stratify else None)
                         clf_search = RandomizedSearchCV(estimator=Pipeline([("scaler", scaler), ("model", clf)]),
-                                                        param_distributions=param_space, cv=splitter,
+                                                        param_distributions=param_space, cv=inner_cv,
                                                         n_iter=n_iter, n_jobs=-1, random_state=split_seed,
                                                         scoring="balanced_accuracy")
+                        nested_score = cross_val_score(clf_search, X=X_orig, y=y_orig, cv=outer_cv, scoring="balanced_accuracy")
 
-                        clf_search.fit(X_train, y_train)
-
-                    # In both cases, determine the accuracy and balanced accuracy metrics
-                    y_pred = clf_search.predict(X_test)
                     if leakage:
-                        leaked_scores = [accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred)]
+                        leaked_scores = [nested_score.mean()]
                     else:
-                        correct_scores = [accuracy_score(y_test, y_pred), balanced_accuracy_score(y_test, y_pred)]
+                        correct_scores = [nested_score.mean()]
 
                 # Save the results for one iteration of seed-scaler-stratification-dataset-classifier combination
                 result_row = ([dataset["name"], scaler.__class__.__name__, stratify, clf_name, split_seed] +

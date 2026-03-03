@@ -1,0 +1,30 @@
+\begin{table}
+\centering
+\begin{tabular}{llcccccccc}
+\toprule
+& & \multicolumn{4}{c}{Random split} & \multicolumn{4}{c}{Stratified split} \\
+& Model & Q3 & Q1 & $\mu$ & $\sigma$ & Q3 & Q1 & $\mu$ & $\sigma$ \\
+\multirow[c]{9}{*}{\rotatebox{90}{Train-test split}} & \gls{AB} & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 \\
+ & \gls{DT} & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & -0.000 & 0.001 \\
+ & \gls{GNB} & 0.000 & 0.000 & -0.000 & 0.001 & 0.000 & 0.000 & 0.000 & 0.001 \\
+ & \gls{KNN} & 0.009 & -0.008 & 0.000 & 0.013 & 0.008 & -0.006 & \fbox{0.001} & 0.013 \\
+ & \gls{LDA} & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 \\
+ & \gls{MLP} & \textbf{0.010} & \textbf{-0.009} & \fbox{0.001} & 0.015 & \textbf{0.010} & \textbf{-0.009} & \fbox{0.001} & 0.015 \\
+ & \gls{QDA} & 0.005 & -0.006 & -0.001 & 0.010 & 0.005 & -0.005 & -0.000 & 0.009 \\
+ & \gls{RF} & 0.000 & 0.000 & 0.000 & 0.001 & 0.000 & 0.000 & 0.000 & 0.001 \\
+ & \gls{SVM} & 0.007 & -0.003 & \fbox{0.002} & 0.009 & 0.006 & -0.003 & \fbox{0.002} & 0.009 \\
+\midrule
+\multirow[c]{9}{*}{\rotatebox{90}{Nested CV}} & \gls{AB} & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 \\
+ & \gls{DT} & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 \\
+ & \gls{GNB} & 0.000 & 0.000 & -0.000 & 0.000 & 0.000 & 0.000 & \fbox{-0.000} & 0.000 \\
+ & \gls{KNN} & \textbf{0.005} & -0.003 & \fbox{0.001} & 0.006 & \textbf{0.005} & \textbf{-0.003} & \fbox{0.001} & 0.005 \\
+ & \gls{LDA} & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 \\
+ & \gls{MLP} & \textbf{0.005} & \textbf{-0.004} & \fbox{0.001} & 0.007 & \textbf{0.005} & \textbf{-0.003} & \fbox{0.001} & 0.006 \\
+ & \gls{QDA} & 0.002 & -0.003 & \fbox{-0.001} & 0.004 & 0.002 & \textbf{-0.003} & \fbox{-0.000} & 0.004 \\
+ & \gls{RF} & 0.000 & 0.000 & -0.000 & 0.001 & 0.000 & 0.000 & -0.000 & 0.001 \\
+ & \gls{SVM} & \textbf{0.005} & -0.001 & \fbox{0.002} & 0.004 & \textbf{0.005} & -0.000 & \fbox{0.003} & 0.004 \\
+\bottomrule
+\end{tabular}
+\caption{Data leakage results for MinMax scaling on \gls{SVD} dataset.}
+\label{tab:minmaxscalersvd}
+\end{table}
